@@ -146,19 +146,4 @@ If a model is missing or incompatible, run `python train_model.py` and restart S
 If dependencies are missing, use the virtual environment's Python to install requirements.
 Keep the project in a writable directory so SQLite can create and update its database.
 
-## Viva explanation
 
-“Users supply rainfall, water level, temperature and humidity. Live weather can fill
-three fields, but river water level must be entered manually. The inputs are validated
-and arranged in the same columns used for training. A saved Random Forest predicts
-LOW, MEDIUM or HIGH. The app displays a color-coded status and stores the inputs,
-result and warning in SQLite. Plotly charts summarize these saved records. The training
-data is simulated, so this demonstrates the software workflow rather than providing
-real flood warnings.”
-
-**Architecture:** Data Collection → Data Preprocessing → AI Prediction → Risk
-Classification → Alert → Dashboard.
-
-Benefits include easy demonstration, understandable code and no paid infrastructure.
-Future work needs verified local flood events, calibrated river levels and independent
-validation. Physical IoT sensors and SMS alerts could be added after that validation.
