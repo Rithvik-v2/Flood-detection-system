@@ -31,6 +31,33 @@ class ProjectTests(unittest.TestCase):
             database.clear_history(path)
             self.assertTrue(database.get_history(path).empty)
 
+    def test_database_connections_close(self):
+        import sqlite3
+        connections = []
+        original_connect = sqlite3.connect
+
+        class TrackedConnection(sqlite3.Connection):
+            closed = False
+
+            def close(self):
+                self.closed = True
+                super().close()
+
+        def connect(path):
+            connection = original_connect(path, factory=TrackedConnection)
+            connections.append(connection)
+            return connection
+
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "connections.db"
+            with patch("database.sqlite3.connect", side_effect=connect):
+                database.init_db(path)
+                database.save_prediction(SCENARIOS["Normal Conditions"], "LOW", path=path)
+                database.get_history(path)
+                database.clear_history(path)
+            self.assertTrue(connections)
+            self.assertTrue(all(connection.closed for connection in connections))
+
     def test_weather_failure(self):
         with patch("weather.requests.get", side_effect=requests.ConnectionError("offline")):
             with self.assertRaisesRegex(RuntimeError, "unavailable"):

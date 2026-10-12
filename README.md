@@ -9,7 +9,7 @@ real-world flood forecasts. Follow official local weather and emergency advisori
 
 ## Run on Windows
 
-Install 64-bit Python 3.12, then open a terminal inside this project folder:
+Install standard 64-bit Python 3.12 or 3.14, then open a terminal inside this project folder:
 
 ```bat
 python -m venv venv
@@ -25,7 +25,9 @@ The activation command above works in Command Prompt. In PowerShell use
 `venv\Scripts\python.exe train_model.py` and
 `venv\Scripts\python.exe -m streamlit run app.py` directly.
 Open the local browser address printed by Streamlit. Stop with Ctrl+C.
-Windows execution has not been tested in this Linux cloud environment.
+Python 3.14 compatibility has been tested on Linux; 64-bit Windows Python 3.14 dependency
+wheels were also successfully resolved and downloaded. Actual Windows execution has
+not been tested in this cloud environment. See the compatibility results below.
 
 The supplied model was trained with scikit-learn 1.8.0. Retraining after installation
 is recommended, especially if changing library versions. Load only trusted Joblib
@@ -164,3 +166,26 @@ Download the latest GitHub ZIP and copy `app.py`, `weather.py`, `test_project.py
 `README.md` into your existing project folder. Preserve `predictions.db` to keep your
 history. Activate your existing virtual environment and restart with
 `python -m streamlit run app.py`.
+
+## Python 3.14 compatibility results
+
+Validated on Python **3.14.7**, standard CPython on Linux, using the unchanged
+`requirements.txt`. Python 3.14.8 was unavailable from the runtime installer here;
+that exact patch release has not been executed.
+
+| Check | Result |
+| --- | --- |
+| Fresh virtual environment and dependency installation | Passed |
+| `python -m pip check` | Passed; no broken requirements |
+| Loading the supplied model and three sample scenarios | Passed |
+| Retraining and saving/loading the model under Python 3.14 | Passed; simulated holdout accuracy 95.56% |
+| All 9 tests including Streamlit interactions and SQLite cleanup | Passed on Python 3.14.7 and 3.12.14 |
+| Streamlit server startup and local health response | Passed on Python 3.14.7 |
+| Python 3.14 64-bit Windows dependency wheels | All dependencies successfully resolved and downloaded |
+
+The same Windows setup commands above apply. There is no need to downgrade Python
+solely because it is version 3.14. If you already created a virtual environment with
+a different Python version, create a fresh virtual environment with your chosen version;
+virtual environments are not transferred between computers or Python installations.
+The database helpers now explicitly close SQLite connections after each operation,
+avoiding resource warnings on newer Python and reducing file-lock issues on Windows.
