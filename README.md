@@ -189,3 +189,25 @@ a different Python version, create a fresh virtual environment with your chosen 
 virtual environments are not transferred between computers or Python installations.
 The database helpers now explicitly close SQLite connections after each operation,
 avoiding resource warnings on newer Python and reducing file-lock issues on Windows.
+
+## Dashboard redesign
+
+The interface now uses a restrained teal, charcoal and off-white palette, compact
+navigation, consistent typography and borders, and a clearer hierarchy across all
+five pages. Home Dashboard combines the latest measurements, risk summary, rainfall
+trend, risk distribution and a concise recent-history table. Empty history includes
+a working first-assessment button. HIGH-risk assessments still display an explicit
+warning. All charts and counts use saved history; no demo records are inserted into
+the delivered database.
+
+**Updating an existing installation:** stop Streamlit, back up your project, and copy
+`app.py`, **`styles.css`**, and `.streamlit/config.toml` from the latest GitHub download
+into the matching locations in your existing folder. If you missed earlier updates,
+also copy `weather.py`, `database.py`, `test_project.py` and `README.md`. Preserve
+`predictions.db` and your virtual environment. Restart Streamlit to load the theme.
+No additional dependencies or retraining are needed.
+
+![Redesigned dashboard](docs/dashboard.png)
+
+Design preview uses simulated scenarios in an isolated preview database. Those records
+are not included in your application history.

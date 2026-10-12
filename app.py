@@ -11,17 +11,38 @@ from train_model import FEATURES, SCENARIOS
 from weather import CITIES, fetch_weather, weather_description, search_cities
 
 ROOT = Path(__file__).resolve().parent
-COLORS = {"LOW": "#16a34a", "MEDIUM": "#eab308", "HIGH": "#dc2626"}
+COLORS = {"LOW": "#398c74", "MEDIUM": "#c5a34e", "HIGH": "#c06a68"}
 LIMITS = [(0., 300.), (0., 10.), (-10., 55.), (0., 100.)]
 PAGES = ["Home Dashboard", "Flood Prediction", "Live Weather", "Prediction History", "About Project"]
-st.set_page_config(page_title="FloodWatch • Smart Flood Prediction", page_icon="🌊", layout="wide")
-st.markdown("""<style>
-[data-testid="stMetric"] {background: white; border:1px solid #dce7f0;
- border-top:3px solid #0891b2; padding:18px; border-radius:12px;}
-[data-testid="stSidebar"] {border-right:1px solid #dce7f0;}
-.block-container {padding-top:2rem; padding-bottom:2rem; max-width:1250px;}
-h1,h2,h3 {color:#10243a;} div.stButton > button {border-radius:9px;}
-</style>""", unsafe_allow_html=True)
+st.set_page_config(page_title="FloodWatch | Environmental intelligence", page_icon="≈", layout="wide")
+st.markdown(f"<style>{(ROOT / 'styles.css').read_text()}</style>", unsafe_allow_html=True)
+
+
+def plot_chart(figure, height=300):
+    """Apply the same quiet visual language to all data charts."""
+    figure.update_layout(
+        template="plotly_white", height=height, margin=dict(l=8, r=8, t=20, b=8),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Arial, sans-serif", size=12, color="#667c84"),
+        hoverlabel=dict(bgcolor="#173943", font_color="white"),
+        legend=dict(title_text="", orientation="h", y=1.15, x=0),
+    )
+    figure.update_xaxes(showgrid=False, zeroline=False, title_font_size=11)
+    figure.update_yaxes(gridcolor="#e9efed", zeroline=False, title_font_size=11)
+    st.plotly_chart(figure, width="stretch", config={"displayModeBar": False})
+
+
+def display_history(records):
+    """Use legible names in the dashboard; CSV exports retain all original columns."""
+    view = records[["timestamp", "risk", "rainfall", "water_level", "temperature", "humidity"]].copy()
+    view["timestamp"] = pd.to_datetime(view.timestamp, utc=True).dt.strftime("%d %b %Y · %H:%M")
+    view = view.rename(columns={"timestamp": "Time (UTC)", "risk": "Risk", "rainfall": "Rain · mm/h",
+                                "water_level": "Water · m", "temperature": "Temp · °C", "humidity": "Humidity · %"})
+    st.dataframe(view, hide_index=True, width="stretch")
+
+
+def go_to_prediction():
+    st.session_state.page = "Flood Prediction"
 
 
 def validate(values):
@@ -36,7 +57,17 @@ def load_model():
 
 
 def show_risk(risk):
-    {"LOW": st.success, "MEDIUM": st.warning, "HIGH": st.error}[risk](f"{risk} RISK — {MESSAGES[risk]}")
+    palette = {"LOW": ("#23715d", "#edf6f1", "Low risk", "✓"),
+               "MEDIUM": ("#97701b", "#fbf5e6", "Moderate risk", "!"),
+               "HIGH": ("#b44747", "#fbeeee", "High risk", "!")}
+    color, background, label, symbol = palette[risk]
+    summary = "Review the warning below and follow official local advisories." if risk == "HIGH" else MESSAGES[risk]
+    st.markdown(f"""<div class="status-panel" style="--status:{color};--status-bg:{background}">
+      <div class="status-symbol">{symbol}</div><div><div class="status-label">Latest model assessment</div>
+      <div class="status-heading">{label}</div><div class="status-copy">{summary}</div></div></div>""",
+      unsafe_allow_html=True)
+    if risk == "HIGH":
+        st.error(MESSAGES[risk])
 
 
 def set_scenario(name):
@@ -68,42 +99,63 @@ def delete_history():
 def rainfall_chart(history):
     chart = history.sort_values("id").copy()
     chart["timestamp"] = pd.to_datetime(chart.timestamp, utc=True)
-    st.plotly_chart(px.line(chart, x="timestamp", y="rainfall", markers=True,
+    plot_chart(px.area(chart, x="timestamp", y="rainfall", markers=True,
         labels={"rainfall": "Rainfall (mm per hour)", "timestamp": "Prediction time (UTC)"},
-        color_discrete_sequence=["#0891b2"]), width="stretch")
+        color_discrete_sequence=["#117d79"]))
 
 
 for feature, value in zip(FEATURES, SCENARIOS["Normal Conditions"]):
     st.session_state.setdefault(feature, value)
 st.session_state.setdefault("source", "Manual measurements")
-st.sidebar.title("🌊 FloodWatch")
-st.sidebar.caption("SMART FLOOD PREDICTION")
-page = st.sidebar.radio("Navigation", PAGES, key="page")
-st.sidebar.info("Academic proof of concept\n\nTrained on SIMULATED DATA. Follow official advisories for real safety decisions.")
-st.title("AI-Based Smart Flood Prediction")
-st.caption("Environmental measurements → machine learning → risk classification → alerts")
+st.sidebar.markdown('<div class="brand"><div class="brand-mark">≈</div><div><div class="brand-name">FloodWatch</div><div class="brand-subtitle">Environmental intelligence</div></div></div>', unsafe_allow_html=True)
+page = st.sidebar.radio("Workspace", PAGES, key="page", label_visibility="collapsed")
+st.sidebar.markdown('<div class="sidebar-note"><strong>Academic demonstration</strong>Trained on simulated data.<br>For real safety decisions, follow official local advisories.</div>', unsafe_allow_html=True)
+HEADINGS = {
+    "Home Dashboard": ("Overview", "A clear view of your latest measurements and saved assessments."),
+    "Flood Prediction": ("Assess flood risk", "Enter environmental measurements to run the trained model."),
+    "Live Weather": ("Weather observatory", "Current conditions and rainfall forecasts, powered by Open-Meteo."),
+    "Prediction History": ("Assessment history", "Review measurements, trace warnings and export your records."),
+    "About Project": ("Behind the model", "Understand the method, measured results and limitations."),
+}
+st.markdown('<div class="page-top"><span class="eyebrow">FloodWatch / Workspace</span><span class="project-tag">Academic edition</span></div>', unsafe_allow_html=True)
+title, description = HEADINGS[page]
+st.title(title)
+st.caption(description)
+st.write("")
 history = get_history()
 
 if page == "Home Dashboard":
-    st.subheader("Your conditions at a glance")
-    if history.empty:
-        st.info("Welcome! Make your first prediction on the Flood Prediction page to populate this dashboard.")
-        values = [None] * 4
-    else:
-        values = history.iloc[0][FEATURES].tolist()
+    values = [None] * 4 if history.empty else history.iloc[0][FEATURES].tolist()
     for column, label, value in zip(st.columns(4),
-            ["Rainfall (mm per hour)", "Water Level (m)", "Temperature (°C)", "Humidity (%)"], values):
+            ["Rainfall · mm/h", "Water level · m", "Temperature · °C", "Humidity · %"], values):
         column.metric(label, "—" if value is None else f"{value:.1f}")
-    if not history.empty:
-        st.caption(f"Latest saved prediction • {history.iloc[0].timestamp} • {history.iloc[0].source}")
+    if history.empty:
+        st.markdown('<div class="empty-state"><div class="eyebrow">Your workspace is ready</div><h3>Start with your first assessment</h3><p>Enter your measurements or try a sample scenario. Your results and charts will appear here.</p></div>', unsafe_allow_html=True)
+        st.button("Create first assessment", type="primary", on_click=go_to_prediction)
+    else:
+        latest_time = pd.to_datetime(history.iloc[0].timestamp, utc=True).strftime("%d %b %Y · %H:%M UTC")
+        st.caption(f"Latest saved readings · {latest_time}")
         show_risk(history.iloc[0].risk)
-        st.subheader("Rainfall history")
-        rainfall_chart(history)
-        st.subheader("Recent predictions")
-        st.dataframe(history.head(5), hide_index=True, width="stretch")
+        trend, breakdown = st.columns([2, 1])
+        with trend, st.container(border=True):
+            st.subheader("Rainfall over time")
+            st.caption("Measurements entered with each assessment")
+            rainfall_chart(history)
+        with breakdown, st.container(border=True):
+            st.subheader("Risk distribution")
+            st.caption(f"Across {len(history)} saved assessments")
+            counts = history.risk.value_counts().rename_axis("risk").reset_index(name="count")
+            figure = px.pie(counts, names="risk", values="count", hole=.72, color="risk", color_discrete_map=COLORS)
+            figure.update_traces(textinfo="none", hovertemplate="%{label}: %{value} assessments<extra></extra>")
+            figure.add_annotation(text=str(len(history)), x=.5, y=.5, showarrow=False, font_size=30, font_color="#173943")
+            plot_chart(figure)
+        with st.container(border=True):
+            st.subheader("Recent assessments")
+            display_history(history.head(5))
+            st.caption("Showing the five most recent records. Full details and exports are in Prediction History.")
 
 elif page == "Flood Prediction":
-    st.subheader("Predict flood risk")
+    st.subheader("Environmental inputs")
     st.caption("Rainfall is an hourly depth (mm). Water level uses an illustrative local reference.")
     for column, name in zip(st.columns(3), SCENARIOS):
         column.button(name, on_click=set_scenario, args=(name,), width="stretch")
@@ -137,10 +189,10 @@ elif page == "Flood Prediction":
         risk, prediction_id = st.session_state.last_prediction
         show_risk(risk)
         st.caption(f"Saved as prediction #{prediction_id}. View measurements and warnings in Prediction History.")
-    st.info("Model predictions reproduce educational assumptions. Synthetic-data accuracy does not measure real-world forecasting ability.")
+    st.caption("Academic model · Trained on simulated measurements. This assessment is not a validated flood forecast.")
 
 elif page == "Live Weather":
-    st.subheader("Live weather • Open-Meteo")
+    st.subheader("Choose a location")
     city = st.selectbox("Choose a city", list(CITIES))
     with st.expander("Search for another city"):
         with st.form("city_search"):
@@ -175,9 +227,10 @@ elif page == "Live Weather":
         st.caption(f"Real API data • {city_label} • {current['time']} IST • {weather_description(current['weather_code'])}")
         st.caption(f"Rain interval: {interval} seconds. Equivalent hourly rate: {rate:.2f} mm/h. This extrapolation is not an observed hourly total.")
         if not forecast.empty:
-            st.plotly_chart(px.bar(forecast, x="time", y="rainfall",
+            st.subheader("48-hour rainfall outlook")
+            plot_chart(px.bar(forecast, x="time", y="rainfall",
                 labels={"time": "Forecast time (IST)", "rainfall": "Hourly rain (mm)"},
-                color_discrete_sequence=["#0891b2"]), width="stretch")
+                color_discrete_sequence=["#117d79"]))
         st.button("Use Current Weather for Prediction", on_click=use_weather, args=(city_label, current),
                   disabled=not (0 <= rate <= 300 and -10 <= current["temperature_2m"] <= 55 and 0 <= current["relative_humidity_2m"] <= 100))
         st.info("Weather values will fill the form. You must enter and confirm water level manually.")
@@ -186,7 +239,7 @@ elif page == "Live Weather":
         st.info("Check your connection and allow api.open-meteo.com. Manual prediction remains available.")
 
 elif page == "Prediction History":
-    st.subheader("Saved predictions & alerts")
+    st.subheader("Saved records")
     st.caption("Timestamps are stored and displayed in UTC. Charts use actual saved predictions.")
     if history.empty:
         st.info("No predictions yet. Try a sample scenario on the Flood Prediction page.")
@@ -194,11 +247,16 @@ elif page == "Prediction History":
         st.download_button("Download prediction history (CSV)",
                            data=history.to_csv(index=False).encode("utf-8-sig"),
                            file_name="flood_prediction_history.csv", mime="text/csv")
-        st.dataframe(history, hide_index=True, width="stretch")
+        display_history(history)
+        with st.expander("Sources and saved warning messages"):
+            st.dataframe(history[["id", "timestamp", "risk", "alert", "source"]], hide_index=True, width="stretch")
         distribution = history.risk.value_counts().rename_axis("risk").reset_index(name="count")
-        st.plotly_chart(px.bar(distribution, x="risk", y="count", color="risk",
-            color_discrete_map=COLORS, category_orders={"risk": ["LOW", "MEDIUM", "HIGH"]}), width="stretch")
+        st.subheader("Risk distribution")
+        plot_chart(px.bar(distribution, x="risk", y="count", color="risk",
+            color_discrete_map=COLORS, category_orders={"risk": ["LOW", "MEDIUM", "HIGH"]}))
+        st.subheader("Rainfall over time")
         rainfall_chart(history)
+        st.divider()
         confirmed = st.checkbox("I confirm that all saved demo predictions should be deleted.")
         st.button("Clear demo history", disabled=not confirmed, on_click=delete_history)
 
@@ -241,8 +299,8 @@ validate by location and time, add physical IoT sensors and SMS alerts.
             "Feature": ["Rainfall", "Water level", "Temperature", "Humidity"],
             "Importance (%)": model.feature_importances_ * 100,
         }).sort_values("Importance (%)")
-        st.plotly_chart(px.bar(importance, x="Importance (%)", y="Feature", orientation="h",
-                              color_discrete_sequence=["#0891b2"]), width="stretch")
+        plot_chart(px.bar(importance, x="Importance (%)", y="Feature", orientation="h",
+                              color_discrete_sequence=["#117d79"]))
         st.caption("These are the forest's overall training feature importances. They do not explain an individual prediction or prove real-world causes. They reflect simulated training labels.")
     except (FileNotFoundError, ValueError, ImportError, EOFError) as error:
         st.error(f"Feature importance is unavailable. Run python train_model.py. Details: {error}")
