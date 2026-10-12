@@ -8,7 +8,7 @@ import plotly.express as px
 import streamlit as st
 from database import get_history, save_prediction, clear_history, MESSAGES
 from train_model import FEATURES, SCENARIOS
-from weather import CITIES, fetch_weather, weather_description
+from weather import CITIES, fetch_weather, weather_description, search_cities
 
 ROOT = Path(__file__).resolve().parent
 COLORS = {"LOW": "#16a34a", "MEDIUM": "#eab308", "HIGH": "#dc2626"}
@@ -142,6 +142,26 @@ elif page == "Flood Prediction":
 elif page == "Live Weather":
     st.subheader("Live weather • Open-Meteo")
     city = st.selectbox("Choose a city", list(CITIES))
+    with st.expander("Search for another city"):
+        with st.form("city_search"):
+            query = st.text_input("City name", placeholder="For example: Pune")
+            searched = st.form_submit_button("Search cities")
+        if searched:
+            st.session_state.city_results = []
+            try:
+                st.session_state.city_results = search_cities(query)
+                if not st.session_state.city_results:
+                    st.info("No cities found. Try a different spelling.")
+            except (RuntimeError, ValueError) as error:
+                st.error(str(error))
+        results = st.session_state.get("city_results", [])
+        if results:
+            selected = st.selectbox("Matching locations", range(len(results)),
+                                    format_func=lambda index: results[index]["label"])
+            use_search = st.checkbox("Use this searched location", value=True)
+            if use_search:
+                city = results[selected]
+    city_label = city["label"] if isinstance(city, dict) else city
     st.button("Refresh weather", type="primary")
     try:
         with st.spinner("Fetching real weather…"):
@@ -152,13 +172,13 @@ elif page == "Live Weather":
                 ["Temperature (°C)", "Humidity (%)", "Rain (mm in API interval)"],
                 [current["temperature_2m"], current["relative_humidity_2m"], current["rain"]]):
             column.metric(label, value)
-        st.caption(f"Real API data • {city} • {current['time']} IST • {weather_description(current['weather_code'])}")
+        st.caption(f"Real API data • {city_label} • {current['time']} IST • {weather_description(current['weather_code'])}")
         st.caption(f"Rain interval: {interval} seconds. Equivalent hourly rate: {rate:.2f} mm/h. This extrapolation is not an observed hourly total.")
         if not forecast.empty:
             st.plotly_chart(px.bar(forecast, x="time", y="rainfall",
                 labels={"time": "Forecast time (IST)", "rainfall": "Hourly rain (mm)"},
                 color_discrete_sequence=["#0891b2"]), width="stretch")
-        st.button("Use Current Weather for Prediction", on_click=use_weather, args=(city, current),
+        st.button("Use Current Weather for Prediction", on_click=use_weather, args=(city_label, current),
                   disabled=not (0 <= rate <= 300 and -10 <= current["temperature_2m"] <= 55 and 0 <= current["relative_humidity_2m"] <= 100))
         st.info("Weather values will fill the form. You must enter and confirm water level manually.")
     except RuntimeError as error:
@@ -171,6 +191,9 @@ elif page == "Prediction History":
     if history.empty:
         st.info("No predictions yet. Try a sample scenario on the Flood Prediction page.")
     else:
+        st.download_button("Download prediction history (CSV)",
+                           data=history.to_csv(index=False).encode("utf-8-sig"),
+                           file_name="flood_prediction_history.csv", mime="text/csv")
         st.dataframe(history, hide_index=True, width="stretch")
         distribution = history.risk.value_counts().rename_axis("risk").reset_index(name="count")
         st.plotly_chart(px.bar(distribution, x="risk", y="count", color="risk",
@@ -211,6 +234,18 @@ sensor integration or emergency notification service. Use official local advisor
 **Future scope.** Collect verified local flood events, calibrate river measurements,
 validate by location and time, add physical IoT sensors and SMS alerts.
 """)
+    st.subheader("What the model relies on")
+    try:
+        model = load_model()
+        importance = pd.DataFrame({
+            "Feature": ["Rainfall", "Water level", "Temperature", "Humidity"],
+            "Importance (%)": model.feature_importances_ * 100,
+        }).sort_values("Importance (%)")
+        st.plotly_chart(px.bar(importance, x="Importance (%)", y="Feature", orientation="h",
+                              color_discrete_sequence=["#0891b2"]), width="stretch")
+        st.caption("These are the forest's overall training feature importances. They do not explain an individual prediction or prove real-world causes. They reflect simulated training labels.")
+    except (FileNotFoundError, ValueError, ImportError, EOFError) as error:
+        st.error(f"Feature importance is unavailable. Run python train_model.py. Details: {error}")
     metrics_path = ROOT / "data/model_metrics.json"
     if metrics_path.exists():
         metrics = json.loads(metrics_path.read_text())

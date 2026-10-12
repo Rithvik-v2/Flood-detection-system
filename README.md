@@ -146,4 +146,21 @@ If a model is missing or incompatible, run `python train_model.py` and restart S
 If dependencies are missing, use the virtual environment's Python to install requirements.
 Keep the project in a writable directory so SQLite can create and update its database.
 
+## New dashboard improvements
 
+- **City search:** on Live Weather expand “Search for another city”, enter a name,
+  click Search cities, then choose the correct region/country from Matching locations.
+  Uncheck “Use this searched location” to return to the original five quick picks.
+  Search uses Open-Meteo geocoding (`geocoding-api.open-meteo.com`), with no key required.
+  Weather times still use IST, including for cities outside India.
+- **CSV export:** Prediction History now offers Download prediction history (CSV).
+  The export includes all saved readings, UTC timestamps, categories, alerts and sources.
+- **Feature importance:** About Project shows the loaded forest's actual feature
+  importances. These reflect synthetic training patterns, not individual explanations
+  or real-world causal influence. No retraining or new dependencies are needed.
+
+To update an existing Windows copy, stop Streamlit with Ctrl+C and back up the folder.
+Download the latest GitHub ZIP and copy `app.py`, `weather.py`, `test_project.py` and
+`README.md` into your existing project folder. Preserve `predictions.db` to keep your
+history. Activate your existing virtual environment and restart with
+`python -m streamlit run app.py`.

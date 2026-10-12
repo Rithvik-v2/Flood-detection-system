@@ -9,7 +9,7 @@ import requests
 from streamlit.testing.v1 import AppTest
 import database
 from train_model import FEATURES, SCENARIOS, ROOT
-from weather import fetch_weather
+from weather import fetch_weather, search_cities
 
 
 class ProjectTests(unittest.TestCase):
@@ -72,6 +72,7 @@ class ProjectTests(unittest.TestCase):
                 self.assertEqual(len(app.metric), 4)
                 app.sidebar.radio[0].set_value("Prediction History").run()
                 self.assertFalse(app.exception)
+                self.assertEqual(len(app.get("download_button")), 1)
                 app.checkbox[0].check().run()
                 next(button for button in app.button if button.label == "Clear demo history").click().run()
                 self.assertTrue(original_get(path).empty)
@@ -111,6 +112,52 @@ class ProjectTests(unittest.TestCase):
                 self.assertFalse(app.exception)
                 self.assertEqual(original_get(path).iloc[0].water_level, 2.)
                 self.assertIn("Open-Meteo", original_get(path).iloc[0].source)
+
+    def test_city_search_dashboard(self):
+        from unittest.mock import Mock
+        search_response = Mock()
+        search_response.json.return_value = {"results": [
+            {"name": "Pune", "admin1": "Maharashtra", "country": "India", "latitude": 18.52, "longitude": 73.85},
+            {"name": "Pune", "country": "Other country", "latitude": 20., "longitude": 70.}]}
+        weather_response = Mock()
+        weather_response.json.return_value = {
+            "current": {"temperature_2m": 26., "relative_humidity_2m": 75., "rain": 1.,
+                        "weather_code": 61, "time": "2026-10-12T12:00", "interval": 900},
+            "hourly": {"time": ["2026-10-12T12:00"], "rain": [2.]}}
+        def response_for(url, **kwargs):
+            return search_response if "geocoding" in url else weather_response
+        with patch("weather.requests.get", side_effect=response_for) as request, \
+             patch("database.get_history", return_value=pd.DataFrame()):
+            app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=20).run()
+            app.sidebar.radio[0].set_value("Live Weather").run()
+            app.text_input[0].set_value("Pune")
+            next(b for b in app.button if b.label == "Search cities").click().run()
+            self.assertFalse(app.exception)
+            self.assertEqual(len(app.selectbox[1].options), 2)
+            self.assertEqual(request.call_args.kwargs["params"]["latitude"], 18.52)
+            app.selectbox[1].set_value(1).run()
+            self.assertEqual(request.call_args.kwargs["params"]["latitude"], 20.)
+            next(b for b in app.button if b.label == "Use Current Weather for Prediction").click().run()
+            self.assertFalse(app.exception)
+            self.assertIn("Other country", app.session_state.source)
+            app.sidebar.radio[0].set_value("About Project").run()
+            self.assertFalse(app.exception)
+            self.assertEqual(len(app.get("plotly_chart")), 1)
+
+    def test_city_search_empty_failure_and_validation(self):
+        from unittest.mock import Mock
+        response = Mock()
+        response.json.return_value = {}
+        with patch("weather.requests.get", return_value=response):
+            self.assertEqual(search_cities("Unknown city"), [])
+            with self.assertRaises(ValueError):
+                search_cities("x")
+            response.json.return_value = {"results": [{"name": "Bad", "latitude": 100., "longitude": 0.}]}
+            with self.assertRaises(RuntimeError):
+                search_cities("Bad")
+        with patch("weather.requests.get", side_effect=requests.Timeout("timeout")):
+            with self.assertRaisesRegex(RuntimeError, "City search is unavailable"):
+                search_cities("Pune")
 
 
 if __name__ == "__main__":

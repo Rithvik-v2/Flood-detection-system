@@ -28,8 +28,34 @@ def weather_description(code):
     return f"Weather code {code}"
 
 
+def search_cities(query):
+    """Return distinct locations so users can disambiguate cities with the same name."""
+    if len(query.strip()) < 2:
+        raise ValueError("Enter at least two characters to search for a city.")
+    try:
+        response = requests.get("https://geocoding-api.open-meteo.com/v1/search",
+                                params={"name": query.strip(), "count": 10, "language": "en", "format": "json"},
+                                timeout=20)
+        response.raise_for_status()
+        locations = []
+        for result in response.json().get("results", []):
+            latitude, longitude = float(result["latitude"]), float(result["longitude"])
+            if not math.isfinite(latitude) or not math.isfinite(longitude) or not -90 <= latitude <= 90 or not -180 <= longitude <= 180:
+                raise ValueError("Invalid location coordinates")
+            label = ", ".join(str(result[key]) for key in ("name", "admin1", "country") if result.get(key))
+            locations.append({"label": f"{label} ({latitude:.3f}, {longitude:.3f})",
+                              "latitude": latitude, "longitude": longitude})
+        return locations
+    except (requests.RequestException, ValueError, KeyError, TypeError, AttributeError) as error:
+        raise RuntimeError(f"City search is unavailable: {error}") from error
+
+
 def fetch_weather(city):
-    latitude, longitude = CITIES[city]
+    # Keep the five quick picks compatible with older callers and tests.
+    if isinstance(city, dict):
+        latitude, longitude = city["latitude"], city["longitude"]
+    else:
+        latitude, longitude = CITIES[city]
     try:
         response = requests.get("https://api.open-meteo.com/v1/forecast", params={
             "latitude": latitude, "longitude": longitude,
