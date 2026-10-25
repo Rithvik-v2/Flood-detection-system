@@ -1,52 +1,52 @@
 /* Local styles: no external fonts or assets are required. */
 :root { --ink:#172b36; --muted:#657780; --line:#e3e8e8; --accent:#117d79; }
-.stApp {background:#f7f9f8;}
+.stApp {background:var(--bg);}
 .block-container {max-width:1240px; padding:2.8rem 2.8rem 3rem;}
 h1,h2,h3 {color:var(--ink); letter-spacing:-.035em; font-weight:600 !important;}
 h1 {font-size:2.15rem !important; line-height:1.2 !important;}
 h3 {font-size:1.12rem !important;}
 [data-testid="stCaptionContainer"] {color:var(--muted);}
-[data-testid="stSidebar"] {background:#fff; border-right:1px solid var(--line);}
+[data-testid="stSidebar"] {background:var(--surface); border-right:1px solid var(--line);}
 [data-testid="stSidebar"] > div:first-child {padding-top:2.5rem;}
 .brand {display:flex; align-items:center; gap:12px; margin-bottom:30px;}
 .brand-mark {display:grid; place-items:center; width:36px; height:36px; background:#173943;
  border-radius:10px; color:#fff; font-size:23px; font-weight:500;}
 .brand-name {font-size:21px; font-weight:650; color:var(--ink); letter-spacing:-.7px;}
-.brand-subtitle {font-size:10px; letter-spacing:1.7px; text-transform:uppercase; color:#71838a; margin-top:2px;}
+.brand-subtitle {font-size:10px; letter-spacing:1.7px; text-transform:uppercase; color:var(--muted); margin-top:2px;}
 [data-testid="stSidebar"] [role="radiogroup"] {gap:5px;}
 [data-testid="stSidebar"] [role="radiogroup"] label {border-radius:7px; padding:9px 12px; transition:background .15s;}
-[data-testid="stSidebar"] [role="radiogroup"] label:hover {background:#f1f5f4;}
-[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {background:#e9f3f1; color:#126c68;}
+[data-testid="stSidebar"] [role="radiogroup"] label:hover {background:var(--hover);}
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {background:var(--selected); color:var(--accent);}
 .sidebar-note {border-top:1px solid var(--line); margin-top:42px; padding-top:20px;
- color:#708087; font-size:12px; line-height:1.7;}
-.sidebar-note strong {display:block; color:#42575f; font-weight:600; margin-bottom:5px;}
+ color:var(--muted); font-size:12px; line-height:1.7;}
+.sidebar-note strong {display:block; color:var(--muted); font-weight:600; margin-bottom:5px;}
 .page-top {display:flex; justify-content:space-between; align-items:center; gap:12px;
  padding-bottom:18px; margin-bottom:28px; border-bottom:1px solid var(--line);}
-.eyebrow {font-size:10px; text-transform:uppercase; letter-spacing:1.8px; color:#647a82; font-weight:600;}
-.project-tag {font-size:11px; color:#566c73; border:1px solid #dbe4e3; border-radius:5px; padding:5px 9px; white-space:nowrap;}
-[data-testid="stMetric"] {background:#fff; border:1px solid var(--line); padding:20px 22px;
+.eyebrow {font-size:10px; text-transform:uppercase; letter-spacing:1.8px; color:var(--muted); font-weight:600;}
+.project-tag {font-size:11px; color:var(--muted); border:1px solid var(--line); border-radius:5px; padding:5px 9px; white-space:nowrap;}
+[data-testid="stMetric"] {background:var(--surface); border:1px solid var(--line); padding:20px 22px;
  border-radius:10px; min-height:130px;}
-[data-testid="stMetricLabel"] {color:#627780; font-size:12px;}
+[data-testid="stMetricLabel"] {color:var(--muted); font-size:12px;}
 [data-testid="stMetricValue"] {color:var(--ink); font-size:2rem; font-weight:550; letter-spacing:-1px;}
 [data-testid="stVerticalBlockBorderWrapper"] > div {border-color:var(--line) !important; border-radius:10px !important;}
-[data-testid="stForm"] {background:#fff; border-color:var(--line); border-radius:10px; padding:24px;}
-[data-testid="stExpander"] {background:#fff; border-radius:9px;}
+[data-testid="stForm"] {background:var(--surface); border-color:var(--line); border-radius:10px; padding:24px;}
+[data-testid="stExpander"] {background:var(--surface); border-radius:9px;}
 [data-testid="stButton"] button, [data-testid="stDownloadButton"] button,
 [data-testid="stFormSubmitButton"] button {border-radius:7px; font-weight:500; min-height:42px; box-shadow:none;}
-[data-testid="stButton"] button[kind="secondary"], [data-testid="stDownloadButton"] button {background:#fff; border-color:#d8e1df;}
+[data-testid="stButton"] button[kind="secondary"], [data-testid="stDownloadButton"] button {background:var(--surface); border-color:var(--line);}
 [data-testid="stAlert"] {border-radius:8px;}
-.status-panel {background:#fff; border:1px solid var(--line); border-radius:10px;
+.status-panel {background:var(--surface); border:1px solid var(--line); border-radius:10px;
  display:flex; align-items:center; gap:18px; padding:23px 26px; margin:10px 0 20px;}
 .status-symbol {width:42px; height:42px; border-radius:50%; display:grid; place-items:center;
  background:var(--status-bg); color:var(--status); font-size:18px; flex-shrink:0;}
-.status-label {font-size:10px; color:#74858b; text-transform:uppercase; letter-spacing:1.5px;}
+.status-label {font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px;}
 .status-heading {font-size:21px; color:var(--status); letter-spacing:-.5px; font-weight:600; margin:3px 0;}
-.status-copy {font-size:13px; line-height:1.6; color:#627680;}
-.empty-state {background:#fff; border:1px dashed #ccd9d6; border-radius:10px;
+.status-copy {font-size:13px; line-height:1.6; color:var(--muted);}
+.empty-state {background:var(--surface); border:1px dashed var(--line); border-radius:10px;
  text-align:center; padding:42px 24px; margin:22px 0;}
 .empty-state h3 {margin:0 0 8px; font-size:19px !important;}
-.empty-state p {font-size:14px; color:#71848b; max-width:400px; margin:0 auto 20px; line-height:1.7;}
-.table-note {font-size:11px; color:#75858c;}
+.empty-state p {font-size:14px; color:var(--muted); max-width:400px; margin:0 auto 20px; line-height:1.7;}
+.table-note {font-size:11px; color:var(--muted);}
 @media (max-width:760px) {
  .block-container {padding:1.5rem 1rem 2rem;}
  h1 {font-size:1.8rem !important;}
@@ -54,3 +54,24 @@ h3 {font-size:1.12rem !important;}
  [data-testid="stMetric"] {padding:16px; min-height:110px;}
  .project-tag {font-size:10px;}
 }
+
+/* Theme overrides cover native controls as well as the dashboard panels. */
+[data-testid="stAppViewContainer"], [data-testid="stHeader"] {background:var(--bg); color:var(--ink);}
+[data-testid="stMarkdownContainer"], label, [data-testid="stWidgetLabel"] {color:var(--ink);}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {color:var(--muted);}
+[data-testid="stMetricLabel"], [data-testid="stCaptionContainer"] p {color:var(--muted);}
+[data-testid="stNumberInputContainer"], [data-baseweb="input"], [data-baseweb="base-input"],
+[data-baseweb="select"] > div {background:var(--field) !important; color:var(--ink) !important; border-color:var(--line) !important;}
+input, textarea {color:var(--ink) !important; caret-color:var(--accent);}
+[data-testid="stNumberInput"] button {background:var(--field); color:var(--ink);}
+[data-testid="stButton"] button[kind="secondary"], [data-testid="stDownloadButton"] button {color:var(--ink);}
+[data-testid="stFormSubmitButton"] button[kind="secondaryFormSubmit"] {background:var(--surface); color:var(--ink); border-color:var(--line);}
+[data-testid="stExpander"] summary {color:var(--ink);}
+[data-testid="stVerticalBlockBorderWrapper"] > div {background:var(--surface);}
+[data-testid="stDataFrame"] {border:1px solid var(--line); border-radius:8px; overflow:hidden;}
+[data-baseweb="popover"] [role="listbox"] {background:var(--surface); color:var(--ink);}
+[data-baseweb="popover"] [role="option"] {color:var(--ink);}
+[data-testid="stTable"] {color:var(--ink);}
+
+[data-testid="stHeader"] button, [data-testid="stSidebarCollapseButton"] button {color:var(--ink);}
+[data-testid="stBaseButton-primary"], [data-testid="stBaseButton-primaryFormSubmit"] {color:#062c28 !important;}

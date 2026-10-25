@@ -96,7 +96,7 @@ class ProjectTests(unittest.TestCase):
                     self.assertEqual(original_get(path).iloc[0].risk, expected)
                 app.sidebar.radio[0].set_value("Home Dashboard").run()
                 self.assertFalse(app.exception)
-                self.assertEqual(len(app.metric), 4)
+                self.assertEqual(len(app.metric), 7)
                 app.sidebar.radio[0].set_value("Prediction History").run()
                 self.assertFalse(app.exception)
                 self.assertEqual(len(app.get("download_button")), 1)
@@ -130,6 +130,8 @@ class ProjectTests(unittest.TestCase):
                 self.assertFalse(app.exception)
                 self.assertEqual(app.sidebar.radio[0].value, "Flood Prediction")
                 self.assertEqual(app.number_input[0].value, 12.)
+                self.assertEqual(next(n for n in app.number_input if "Temperature" in n.label).value, 27.)
+                self.assertEqual(next(n for n in app.number_input if "Humidity" in n.label).value, 82.)
                 next(b for b in app.button if b.label == "Predict Flood Risk").click().run()
                 self.assertTrue(original_get(path).empty)
                 self.assertTrue(app.error)
@@ -185,6 +187,36 @@ class ProjectTests(unittest.TestCase):
         with patch("weather.requests.get", side_effect=requests.Timeout("timeout")):
             with self.assertRaisesRegex(RuntimeError, "City search is unavailable"):
                 search_cities("Pune")
+
+    def test_theme_and_history_filters(self):
+        original_get, original_save = database.get_history, database.save_prediction
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "filters.db"
+            for values, risk in zip(SCENARIOS.values(), ["LOW", "MEDIUM", "HIGH"]):
+                original_save(values, risk, path=path)
+            with patch("database.get_history", side_effect=lambda: original_get(path)):
+                app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=20).run()
+                self.assertTrue(app.sidebar.toggle[0].value)
+                next(x for x in app.selectbox if x.label == "Measurement trend").set_value("Water level").run()
+                self.assertFalse(app.exception)
+                self.assertIn("Water level (m)", app.get("plotly_chart")[0].proto.spec)
+                app.sidebar.toggle[0].set_value(False).run()
+                self.assertFalse(app.exception)
+                self.assertIn("#526b75", app.get("plotly_chart")[0].proto.spec)
+                app.sidebar.radio[0].set_value("Prediction History").run()
+                app.multiselect[0].set_value(["HIGH"]).run()
+                self.assertFalse(app.exception)
+                self.assertEqual(len(app.dataframe[0].value), 1)
+                self.assertEqual(app.dataframe[0].value.iloc[0]["Risk"], "HIGH")
+                app.multiselect[0].set_value([]).run()
+                self.assertFalse(app.exception)
+                self.assertEqual(len(app.get("plotly_chart")), 0)
+                self.assertIn("No assessments match", app.info[0].value)
+                self.assertEqual(len(original_get(path)), 3)
+                from datetime import timedelta
+                app.date_input[0].set_value(app.date_input[1].value + timedelta(days=1)).run()
+                self.assertFalse(app.exception)
+                self.assertIn("Start date", app.error[0].value)
 
 
 if __name__ == "__main__":

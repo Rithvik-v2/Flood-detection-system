@@ -179,7 +179,7 @@ that exact patch release has not been executed.
 | `python -m pip check` | Passed; no broken requirements |
 | Loading the supplied model and three sample scenarios | Passed |
 | Retraining and saving/loading the model under Python 3.14 | Passed; simulated holdout accuracy 95.56% |
-| All 9 tests including Streamlit interactions and SQLite cleanup | Passed on Python 3.14.7 and 3.12.14 |
+| All 10 tests including Streamlit interactions, history filters and SQLite cleanup | Passed on Python 3.14.7 and 3.12.14 |
 | Streamlit server startup and local health response | Passed on Python 3.14.7 |
 | Python 3.14 64-bit Windows dependency wheels | All dependencies successfully resolved and downloaded |
 
@@ -211,3 +211,29 @@ No additional dependencies or retraining are needed.
 
 Design preview uses simulated scenarios in an isolated preview database. Those records
 are not included in your application history.
+
+## Dark mode and dashboard tools
+
+The application now opens in dark mode. Use **Dark mode** in the sidebar to switch
+between dark and light content themes for the current session. A new session starts
+in dark mode. The native Streamlit table header keeps its configured dark appearance.
+
+Home Dashboard now includes saved-assessment and high-risk counts, average rainfall,
+a New assessment shortcut, and a Measurement trend selector for rainfall or water level.
+Summary counts use your actual saved history, not weather forecasts or seeded examples.
+Prediction History supports risk and UTC date filters. Its table, charts and CSV export
+all use the filtered records. Invalid date ranges and empty matches are explained.
+The confirmed Clear demo history action still clears **all** saved history, regardless
+of the active filters.
+
+Weather import and scenario buttons now initialize explicit form values from durable
+measurements rather than relying on hidden widget state. This fixes browser forms
+showing input minimums (such as -10°C) after a weather transfer. A real Open-Meteo to
+browser transfer was verified, along with theme switching and mobile layout.
+
+**Update:** stop Streamlit with Ctrl+C, back up your folder, then replace `app.py`,
+`styles.css`, `test_project.py`, `README.md`, and `.streamlit/config.toml` using the latest
+GitHub ZIP. Keep your `venv`, `predictions.db`, dataset and trained model. Restart with
+`python -m streamlit run app.py`. Dependencies are unchanged; no retraining is required.
+All 10 tests pass on Python 3.12.14 and Python 3.14.7 in Linux. Windows runtime execution
+remains untested here.
